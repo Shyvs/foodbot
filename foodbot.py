@@ -43,7 +43,7 @@ async def on_ready():
 # -------- START FOOD VOTE --------
 @bot.tree.command(name="startfood", description="Start new food vote")
 async def startfood(interaction: discord.Interaction):
-    await interaction.response.defer()  # <-- tells Discord to wait
+    await interaction.response.defer(ephemeral=False)
 
     session["stage"] = 1
     session["restaurants"] = default_cuisines.copy()
@@ -59,8 +59,13 @@ async def startfood(interaction: discord.Interaction):
     message += "\nUse /suggest to add more options.\nUse /rank followed by numbers separated by spaces. Example: /rank 3 1 2"
 
     msg = await interaction.followup.send(message, fetch_response=True)
-    session["options_message"] = msg
+
+    # Small delay to avoid timeout
+    import asyncio
+    await asyncio.sleep(0.3)
     await msg.pin(reason="Food voting options")
+
+    session["options_message"] = msg
 
 
 # -------- SUGGEST OPTION --------
