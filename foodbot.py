@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import os
 import random
+import asyncio
 
 TOKEN = os.environ["DISCORD_TOKEN"]
 
@@ -23,7 +24,7 @@ session = {
 }
 
 # -------- DEFAULT CUISINES --------
-default_cuisines = ["Chinese", "Thai", "Indian", "Mexican", "Burger", "Pizza"]
+default_cuisines = ["Chinese", "Indian", "Mexican", "Burger", "Pizza"]
 
 # -------- DEFAULT RESTAURANTS PER CUISINE --------
 restaurant_options = {
@@ -59,20 +60,17 @@ async def startfood(interaction: discord.Interaction):
     message += "\nUse /suggest to add more options.\nUse /rank followed by numbers separated by spaces. Example: /rank 3 1 2"
 
     msg = await interaction.followup.send(message, fetch_response=True)
-
-    # Small delay to avoid timeout
-    import asyncio
     await asyncio.sleep(0.3)
     await msg.pin(reason="Food voting options")
-
     session["options_message"] = msg
-
 
 # -------- SUGGEST OPTION --------
 @bot.tree.command(name="suggest", description="Suggest a restaurant or cuisine")
 async def suggest(interaction: discord.Interaction, name: str):
+    await interaction.response.defer(ephemeral=True)
+
     if not session["voting_open"]:
-        await interaction.response.send_message("Voting is not open.", ephemeral=True)
+        await interaction.followup.send("Voting is not open.", ephemeral=True)
         return
 
     session["restaurants"].append(name)
@@ -85,35 +83,42 @@ async def suggest(interaction: discord.Interaction, name: str):
         new_content += "\nUse /rank to submit your ranked choices."
         await session["options_message"].edit(content=new_content)
 
-    await interaction.response.send_message(f"{name} added.", ephemeral=True)
+    await interaction.followup.send(f"{name} added.", ephemeral=True)
 
 # -------- VIEW OPTIONS --------
 @bot.tree.command(name="options", description="View current options")
 async def options(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+
     message = "**Current Options:**\n"
     for i, r in enumerate(session["restaurants"], start=1):
         message += f"{i}. {r}\n"
-    await interaction.response.send_message(message, ephemeral=True)
+
+    await interaction.followup.send(message, ephemeral=True)
 
 # -------- RANKED VOTE --------
 @bot.tree.command(name="rank", description="Submit ranked choices (ex: 3 1 2)")
 async def rank(interaction: discord.Interaction, rankings: str):
+    await interaction.response.defer(ephemeral=True)
+
     if not session["voting_open"]:
-        await interaction.response.send_message("Voting is closed.", ephemeral=True)
+        await interaction.followup.send("Voting is closed.", ephemeral=True)
         return
 
     try:
         ranked_list = [int(x) for x in rankings.split()]
         session["ballots"][interaction.user.name] = ranked_list
-        await interaction.response.send_message("Ballot submitted.", ephemeral=True)
+        await interaction.followup.send("Ballot submitted.", ephemeral=True)
     except:
-        await interaction.response.send_message("Invalid format. Example: 3 1 2", ephemeral=True)
+        await interaction.followup.send("Invalid format. Example: 3 1 2", ephemeral=True)
 
 # -------- END VOTE --------
 @bot.tree.command(name="endvote", description="Close voting and calculate winner")
 async def endvote(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=False)
+
     if not session["voting_open"]:
-        await interaction.response.send_message("Voting already closed.", ephemeral=True)
+        await interaction.followup.send("Voting already closed.", ephemeral=True)
         return
 
     session["voting_open"] = False
@@ -134,12 +139,12 @@ async def endvote(interaction: discord.Interaction):
             new_content += "\nUse /rank to submit your ranked choices."
             await session["options_message"].edit(content=new_content)
 
-        await interaction.response.send_message(f"Cuisine '{winner}' won! Starting specific restaurant vote.", ephemeral=False)
+        await interaction.followup.send(f"Cuisine '{winner}' won! Starting specific restaurant vote.", ephemeral=False)
     else:
         # Final restaurant selected, open orders
         session["final_restaurant"] = winner
         session["orders_open"] = True
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"**Final Restaurant:** {winner}\nOrdering is now open. Use /order to submit your food.",
             ephemeral=False
         )
@@ -181,18 +186,22 @@ def instant_runoff(ballots, options):
 # -------- ORDER SUBMISSION --------
 @bot.tree.command(name="order", description="Submit your food order")
 async def order(interaction: discord.Interaction, item: str):
+    await interaction.response.defer(ephemeral=True)
+
     if not session["orders_open"]:
-        await interaction.response.send_message("Ordering is not open.", ephemeral=True)
+        await interaction.followup.send("Ordering is not open.", ephemeral=True)
         return
 
     session["orders"][interaction.user.name] = item
-    await interaction.response.send_message("Order saved.", ephemeral=True)
+    await interaction.followup.send("Order saved.", ephemeral=True)
 
 # -------- FINALIZE ORDERS --------
 @bot.tree.command(name="finalize", description="Close ordering and show list")
 async def finalize(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=False)
+
     if not session["orders_open"]:
-        await interaction.response.send_message("Orders already closed.", ephemeral=True)
+        await interaction.followup.send("Orders already closed.", ephemeral=True)
         return
 
     session["orders_open"] = False
@@ -201,6 +210,6 @@ async def finalize(interaction: discord.Interaction):
     for user, order in session["orders"].items():
         message += f"{user} – {order}\n"
 
-    await interaction.response.send_message(message, ephemeral=False)
+    await interaction.followup.send(message, ephemeral=False)
 
 bot.run(TOKEN)
