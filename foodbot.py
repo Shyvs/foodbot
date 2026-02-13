@@ -5,8 +5,10 @@ import os
 import random
 import asyncio
 
+# Get the bot token from environment variables
 TOKEN = os.environ["DISCORD_TOKEN"]
 
+# Intents
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -59,8 +61,8 @@ async def startfood(interaction: discord.Interaction):
         message += f"{i}. {r}\n"
     message += "\nUse /suggest to add more options.\nUse /rank followed by numbers separated by spaces. Example: /rank 3 1 2"
 
-    msg = await interaction.followup.send(message, fetch_response=True)
-    await asyncio.sleep(0.3)
+    msg = await interaction.followup.send(message)
+    await asyncio.sleep(0.3)  # delay to avoid timeout issues
     await msg.pin(reason="Food voting options")
     session["options_message"] = msg
 
@@ -212,4 +214,5 @@ async def finalize(interaction: discord.Interaction):
 
     await interaction.followup.send(message, ephemeral=False)
 
+# -------- RUN BOT --------
 bot.run(TOKEN)
