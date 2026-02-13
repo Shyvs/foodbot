@@ -28,11 +28,10 @@ default_cuisines = ["Chinese", "Thai", "Indian", "Mexican", "Burger", "Pizza"]
 # -------- DEFAULT RESTAURANTS PER CUISINE --------
 restaurant_options = {
     "Pizza": ["Domino's", "Pizza Hut", "Local Pizzeria", "Little Caesars"],
-    "Burger": ["McDonald's", "Five Guys", "Burger King", "In-N-Out"],
+    "Burger": ["McDonald's", "Culvers", "Burger King", "Freddy's"],
     "Chinese": ["Panda Express", "Local Chinese 1", "Local Chinese 2"],
-    "Thai": ["Thai House", "Local Thai 1", "Local Thai 2"],
-    "Indian": ["Curry House", "Local Indian 1", "Local Indian 2"],
-    "Mexican": ["Taco Bell", "Local Mexican 1", "Local Mexican 2"]
+    "Indian": ["Indian Darbar", "Local Indian"],
+    "Mexican": ["El Azteca", "TBell", "TJohns"]
 }
 
 # -------- BOT READY --------
