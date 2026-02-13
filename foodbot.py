@@ -48,11 +48,12 @@ async def on_ready():
 async def startfood(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=False)
 
+    # RESET EVERYTHING for a new session
     session["stage"] = 1
     session["restaurants"] = default_cuisines.copy()
     session["ballots"] = {}
     session["orders"] = {}
-    session["voting_open"] = True
+    session["voting_open"] = True        # reopen voting
     session["orders_open"] = False
     session["final_restaurant"] = None
 
@@ -62,9 +63,10 @@ async def startfood(interaction: discord.Interaction):
     message += "\nUse /suggest to add more options.\nUse /rank followed by numbers separated by spaces. Example: /rank 3 1 2"
 
     msg = await interaction.followup.send(message)
-    await asyncio.sleep(0.3)  # delay to avoid timeout issues
+    await asyncio.sleep(0.3)  # tiny delay to avoid timeout issues
     await msg.pin(reason="Food voting options")
     session["options_message"] = msg
+
 
 # -------- SUGGEST OPTION --------
 @bot.tree.command(name="suggest", description="Suggest a restaurant or cuisine")
@@ -119,15 +121,20 @@ async def rank(interaction: discord.Interaction, rankings: str):
 async def endvote(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=False)
 
-    if not session["voting_open"]:
-        await interaction.followup.send("Voting already closed.", ephemeral=True)
+    # Check if voting is actually open
+    if not session.get("voting_open", False):
+        await interaction.followup.send("Voting already closed or not started.", ephemeral=True)
+        return
+
+    if not session["ballots"]:
+        await interaction.followup.send("No ballots submitted yet.", ephemeral=True)
         return
 
     session["voting_open"] = False
     winner = instant_runoff(session["ballots"], session["restaurants"])
 
+    # Stage 1 -> move to stage 2 if applicable
     if session["stage"] == 1 and winner in restaurant_options:
-        # Move to stage 2
         session["stage"] = 2
         session["restaurants"] = restaurant_options[winner].copy()
         session["ballots"] = {}
