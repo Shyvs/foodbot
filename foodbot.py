@@ -214,5 +214,23 @@ async def finalize(interaction: discord.Interaction):
 
     await interaction.followup.send(message, ephemeral=False)
 
+# -------- Flask thing? --------
+
+from flask import Flask
+import threading
+
+app = Flask("")
+
+@app.route("/")
+def home():
+    return "FoodBot is running!"
+
+# Run Flask in a separate thread
+def run_flask():
+    app.run(host="0.0.0.0", port=10000)
+
+threading.Thread(target=run_flask).start()
+
+
 # -------- RUN BOT --------
 bot.run(TOKEN)
